@@ -1,0 +1,5 @@
+Errore di connessione al server.  
+Il file richiesto non è stato trovato.  
+Database connection failed durante il login.  
+L'applicazione ha generato un'eccezione imprevista.  
+Verificare i log per ulteriori dettagli.

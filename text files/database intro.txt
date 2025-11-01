@@ -1,0 +1,4 @@
+Un database è un insieme di dati organizzati in modo strutturato.  
+Per collegarsi a un database si utilizza una connessione e spesso un linguaggio SQL.  
+Un errore comune è "database connection failed" quando i parametri sono sbagliati.  
+Le applicazioni moderne si basano molto sulla gestione dei dati.

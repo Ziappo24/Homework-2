@@ -1,0 +1,29 @@
+INTRODUZIONE ALLA PROGRAMMAZIONE
+
+La programmazione è l'attività di scrivere codice sorgente in un linguaggio di programmazione. 
+Esistono molti linguaggi di programmazione diversi, come Python, Java e C++.
+
+CONCETTI FONDAMENTALI
+
+Un programma è una sequenza di istruzioni che il computer esegue. 
+I linguaggi di programmazione moderni supportano diversi paradigmi: 
+- Programmazione strutturata
+- Programmazione orientata agli oggetti
+- Programmazione funzionale
+
+DATABASE E ARCHIVIAZIONE
+
+Quando si lavora con i dati, spesso si utilizzano database. 
+Un database è una collezione organizzata di dati. 
+Esistono database relazionali come MySQL e database NoSQL come Elasticsearch version 8.0.
+
+ELASTICSEARCH PER L'ANALISI
+
+Elasticsearch è un potente motore di ricerca e analisi. 
+Viene utilizzato per l'indicizzazione di grandi volumi di dati e offre prestazioni eccellenti 
+per la ricerca full-text. L'analisi dei dati in tempo reale è una delle sue caratteristiche principali.
+
+ATTIVITÀ PRATICHE
+
+Oggi stiamo correndo per finire il progetto di analisi dei dati. 
+Dobbiamo camminare attraverso tutti i passaggi dell'indicizzazione.

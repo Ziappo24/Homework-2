@@ -1,0 +1,4 @@
+La programmazione avanzata include concetti come l'ereditarietà, il polimorfismo e la gestione della memoria.  
+Scrivere codice efficiente è importante nei progetti di grandi dimensioni.  
+Il programmatore deve saper ottimizzare e strutturare bene il software.  
+Anche l'uso di librerie esterne è parte della programmazione moderna.
