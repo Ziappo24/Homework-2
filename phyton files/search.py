@@ -19,13 +19,10 @@ except Exception as e:
     print(f"Dettagli: {e}")
     sys.exit()
 
-# --- 2. Funzioni di parsing e ricerca ---
+# --- 2. Funzioni di supporto ---
 
 def normalize_text(text):
-    """
-    Normalizza il testo rimuovendo accenti e rendendolo minuscolo
-    (utile per ricerche esatte più flessibili)
-    """
+    """Rimuove accenti e converte in minuscolo"""
     text = text.lower()
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
     return text
@@ -33,16 +30,14 @@ def normalize_text(text):
 
 def parse_query(query_string):
     """
-    Parsing migliorato per supportare diverse sintassi:
+    Parsing per supportare:
       nome "frase"
-      contenuto "frase"
-      contenuto parola1 parola2
-      esatto "testo"
+      nome parola
+      contenuto "frase esatta"
+      contenuto parola
     """
     query_string = query_string.strip()
-
-    # Permette sia virgolette che parole normali
-    pattern = r'^(nome|contenuto|esatto)\s+(?:"([^"]+)"|(.+))$'
+    pattern = r'^(nome|contenuto)\s+(?:"([^"]+)"|(.+))$'
     match = re.match(pattern, query_string, re.IGNORECASE)
 
     if not match:
@@ -51,63 +46,31 @@ def parse_query(query_string):
     command = match.group(1).lower()
     phrase_query = match.group(2)
     normal_query = match.group(3)
+    search_term = phrase_query if phrase_query else normal_query.strip()
 
-    # Determina il tipo di campo e ricerca
     if command == "nome":
         field = "file_name"
-        search_type = "phrase" if phrase_query else "match"
-
     elif command == "contenuto":
         field = "content"
-        search_type = "phrase" if phrase_query else "match"
-
-    elif command == "esatto":
-        field = "content.keyword"
-        search_type = "exact"
-
     else:
         return None, None, None
 
-    # Determina il termine di ricerca
-    search_term = phrase_query if phrase_query else (normal_query.strip() if normal_query else "")
-    if not search_term:
-        return None, None, None
+    # Se l’utente ha usato virgolette, facciamo una phrase query
+    search_type = "phrase" if phrase_query else "match"
 
     return field, search_term, search_type
 
 
 def execute_search(field, search_term, search_type):
-    """
-    Esegue la ricerca su Elasticsearch in base al tipo:
-    - match        → ricerca normale
-    - phrase       → frase esatta
-    - exact        → corrispondenza letterale (campo keyword)
-    """
-    # Normalizzazione solo per tipo "exact"
-    normalized_term = normalize_text(search_term) if search_type == "exact" else search_term
-
+    """Esegue la ricerca su Elasticsearch"""
     if search_type == "phrase":
         query_body = {
-            "query": {
-                "match_phrase": {field: search_term}
-            },
+            "query": {"match_phrase": {field: search_term}},
             "highlight": {"fields": {field: {}}}
         }
-
-    elif search_type == "exact":
-        # Usa match_phrase sul campo keyword per compatibilità e highlight
-        query_body = {
-            "query": {
-                "match_phrase": {field: normalized_term}
-            },
-            "highlight": {"fields": {"content": {}}}
-        }
-
     else:  # match normale
         query_body = {
-            "query": {
-                "match": {field: search_term}
-            },
+            "query": {"match": {field: search_term}},
             "highlight": {"fields": {field: {}}}
         }
 
@@ -120,9 +83,7 @@ def execute_search(field, search_term, search_type):
 
 
 def print_results(response, field, search_term, search_type):
-    """
-    Stampa i risultati della ricerca in modo leggibile
-    """
+    """Mostra i risultati in modo leggibile"""
     if not response:
         print("⚠️ Nessuna risposta da Elasticsearch.")
         return
@@ -138,8 +99,8 @@ def print_results(response, field, search_term, search_type):
 
     if total_hits == 0:
         print("Nessun documento trovato.")
-        if search_type == "exact":
-            print("💡 Suggerimento: la ricerca esatta confronta il testo letterale (sensibile a spazi e punteggiatura).")
+        if search_type == "phrase":
+            print("💡 Suggerimento: le phrase query cercano la frase esatta nel testo.")
         return
 
     for i, hit in enumerate(hits):
@@ -150,47 +111,24 @@ def print_results(response, field, search_term, search_type):
         print(f"\n{i+1}. {filename} (score: {score:.4f})")
         print(f"   📁 Percorso: {filepath}")
 
-        # Evidenziazioni (se presenti)
         if 'highlight' in hit and hit['highlight']:
-            print(f"   🔍 Evidenziazioni:")
+            print("   🔍 Evidenziazioni:")
             for field_name, snippets in hit['highlight'].items():
                 for snippet in snippets:
                     print(f"      ...{snippet}...")
 
-        # Contesto testuale aggiuntivo per le ricerche esatte
-        if search_type == "exact" and 'content' in hit['_source']:
-            content = normalize_text(hit['_source']['content'])
-            term = normalize_text(search_term)
-            indices = [m.start() for m in re.finditer(term, content)]
-
-            if indices:
-                for idx in indices[:2]:  # Mostra al massimo 2 contesti
-                    start = max(0, idx - 80)
-                    end = min(len(content), idx + len(term) + 80)
-                    context = hit['_source']['content'][start:end]
-                    print(f"   📍 Contesto: ...{context}...")
-            else:
-                print("   📍 Nessun contesto rilevato nel testo.")
-
 
 def parse_and_search(query_string):
-    """
-    Funzione principale che unisce parsing e ricerca
-    """
+    """Gestisce parsing e ricerca"""
     field, search_term, search_type = parse_query(query_string)
 
     if not field:
         print("❌ Sintassi non valida.")
         print("\n📚 SINTASSI CORRETTE:")
-        print('  nome "termine"                 - Ricerca per nome file (es: nome "report")')
-        print('  contenuto "frase esatta"       - Ricerca frase nel contenuto')
-        print('  contenuto termine              - Ricerca normale nel contenuto')
-        print('  esatto "testo letterale"       - Ricerca ESATTA nel contenuto')
-        print("\n💡 ESEMPI:")
-        print('  nome "programmazione_base.txt"')
-        print('  contenuto "linguaggio di programmazione"')
-        print('  contenuto città')
-        print('  esatto "database connection failed"')
+        print('  nome "termine"                 - Cerca nel nome del file (es: nome "report")')
+        print('  nome parola                    - Cerca nomi contenenti la parola indicata')
+        print('  contenuto "frase esatta"        - Cerca una frase precisa nel testo')
+        print('  contenuto parola                - Ricerca normale nel testo')
         return
 
     print(f"🔍 Eseguo ricerca: {search_type} su {field} → '{search_term}'")
@@ -204,9 +142,9 @@ def main():
     print("💡 Digita 'esci' per uscire.")
     print("\n📚 SINTASSI:")
     print('  nome "termine"                 - Cerca nel nome file')
-    print('  contenuto "frase"              - Cerca frase esatta nel contenuto')
-    print('  contenuto termine              - Ricerca normale nel contenuto')
-    print('  esatto "testo"                 - Ricerca ESATTA letterale')
+    print('  nome parola                    - Cerca nomi contenenti una parola')
+    print('  contenuto "frase"              - Cerca una frase esatta nel contenuto')
+    print('  contenuto parola               - Ricerca normale nel contenuto')
     print("-" * 60)
 
     while True:
@@ -217,7 +155,6 @@ def main():
                 break
             if not query:
                 continue
-
             parse_and_search(query)
 
         except KeyboardInterrupt:
