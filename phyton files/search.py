@@ -83,7 +83,7 @@ def execute_search(field, search_term, search_type):
 
 
 def print_results(response, field, search_term, search_type):
-    """Mostra i risultati in modo leggibile"""
+    """Mostra i risultati in modo leggibile, con evidenziazione ANSI"""
     if not response:
         print("⚠️ Nessuna risposta da Elasticsearch.")
         return
@@ -115,7 +115,14 @@ def print_results(response, field, search_term, search_type):
             print("   🔍 Evidenziazioni:")
             for field_name, snippets in hit['highlight'].items():
                 for snippet in snippets:
-                    print(f"      ...{snippet}...")
+                    # Sostituisci <em>...</em> con colore ANSI giallo
+                    colored_snippet = re.sub(
+                        r'<em>(.*?)</em>',
+                        lambda m: f"\033[33m{m.group(1)}\033[0m",
+                        snippet
+                    )
+                    print(f"      ...{colored_snippet}...")
+
 
 
 def parse_and_search(query_string):

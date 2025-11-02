@@ -32,55 +32,60 @@ def create_index():
     print(f"Creo l'indice '{INDEX_NAME}'...")
 
     index_settings = {
-        "settings": {
-            "analysis": {
-                "analyzer": {
-                    "filename_analyzer": {
-                        "type": "custom",
-                        "tokenizer": "standard",
-                        "filter": ["lowercase", "asciifolding"]
-                    },
-                    "content_analyzer_italian": {
-                        "type": "custom",
-                        "tokenizer": "standard",
-                        "filter": [
-                            "lowercase",
-                            "asciifolding",
-                            "italian_stop",
-                            "italian_stemmer"
-                        ]
-                    }
-                },
-                "filter": {
-                    "italian_stop": {
-                        "type": "stop",
-                        "stopwords": "_italian_"
-                    },
-                    "italian_stemmer": {
-                        "type": "stemmer",
-                        "language": "italian"
-                    }
-                }
-            }
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "filename_analyzer": {
+          "type": "custom",
+          "tokenizer": "filename_tokenizer",
+          "filter": ["lowercase"]
         },
-        "mappings": {
-            "properties": {
-                "file_name": {
-                    "type": "text",
-                    "analyzer": "filename_analyzer",
-                    
-                },
-                "content": {
-                    "type": "text",
-                    "analyzer": "content_analyzer_italian",
-                    
-                },
-                "file_path": {"type": "keyword"},
-                "file_size": {"type": "long"},
-                "last_modified": {"type": "date"}
-            }
+        "content_analyzer_italian": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding", "italian_stop", "italian_stemmer"]
         }
+      },
+      "filter": {
+        "italian_stop": {
+          "type": "stop",
+          "stopwords": "_italian_"
+        },
+        "italian_stemmer": {
+          "type": "stemmer",
+          "language": "italian"
+        }
+      },
+      "tokenizer": {
+        "filename_tokenizer": {
+          "type": "pattern",
+          "pattern": "[^a-zA-Z0-9]+"
+        }
+      }
     }
+  },
+  "mappings": {
+    "properties": {
+      "file_name": {
+        "type": "text",
+        "analyzer": "filename_analyzer"
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "content_analyzer_italian"
+      },
+      "file_path": {
+        "type": "keyword"
+      },
+      "file_size": {
+        "type": "long"
+      },
+      "last_modified": {
+        "type": "date"
+      }
+    }
+  }
+}
 
     try:
         es.indices.create(index=INDEX_NAME, body=index_settings)
